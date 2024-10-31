@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
@@ -29,6 +27,7 @@ public class Plugin : BaseUnityPlugin
         try
         {
             Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
+            PluginConfig.Init(Config);
             m_harmony.PatchAll(typeof(WheelBarrowInjector));
             LoadWheelbarrow();
             LoadCash();
@@ -127,11 +126,7 @@ public class Plugin : BaseUnityPlugin
 
     internal static bool IsHighRoll(float money)
     {
-        var warehouseBonus = 0;
-        if (CPlayerData.m_IsWarehouseRoomUnlocked)
-            warehouseBonus = 500;
-        var threshold = Mathf.Clamp(100 + CPlayerData.m_UnlockRoomCount * 250 + warehouseBonus + CPlayerData.m_UnlockWarehouseRoomCount * 400 + CPlayerData.m_ShopLevel * 100, 100, 30000);
-        return money >= threshold * 1.5f;
+        return money >= PluginConfig.Threshold.Value;
     }
     
     internal static void AddWheelbarrowToNpc(Customer customer)
