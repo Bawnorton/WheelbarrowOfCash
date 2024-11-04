@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using BepInEx;
@@ -21,6 +22,9 @@ public class Plugin : BaseUnityPlugin
     private static readonly int HeightMap = Shader.PropertyToID("_HeightMap");
     private static readonly int OcclusionMap = Shader.PropertyToID("_OcclusionMap");
     private Harmony m_harmony = new(MyPluginInfo.PLUGIN_GUID);
+    
+    private static readonly Dictionary<Customer, GameObject> wheelbarrowInstances = new();
+    
     private void Awake()
     {
         Logger = base.Logger;
@@ -28,7 +32,8 @@ public class Plugin : BaseUnityPlugin
         {
             Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
             PluginConfig.Init(Config);
-            m_harmony.PatchAll(typeof(WheelBarrowInjector));
+            m_harmony.PatchAll(typeof(WheelbarrowAdderInjector));
+            m_harmony.PatchAll(typeof(WheelbarrowRemoverInjector));
             LoadWheelbarrow();
             LoadCash();
         }
@@ -144,14 +149,34 @@ public class Plugin : BaseUnityPlugin
         const float cashScale = 60f;
         cashInstance.transform.localScale = new Vector3(cashScale, cashScale, cashScale);
         cashInstance.transform.localPosition = new Vector3(0, 0.43f, 0.02f);
+        wheelbarrowInstances[customer] = wheelbarrowInstance;
     }
 
-    private class WheelBarrowInjector
+    internal static void RemoveWheelbarrowFromNpc(Customer customer)
+    {
+        if (wheelbarrowPrefab == null) return;
+        if (!wheelbarrowInstances.TryGetValue(customer, out var wheelbarrowInstance)) return;
+        
+        Logger.LogInfo("Destroying Wheelbarrow");
+        Destroy(wheelbarrowInstance);
+        wheelbarrowInstances.Remove(customer);
+    }
+
+    private class WheelbarrowAdderInjector
     {
         [HarmonyPatch(typeof(Customer), "ActivateCustomer")]
         private static void Postfix(Customer __instance)
         {
             AddWheelbarrowToNpc(__instance);
+        }
+    }
+
+    private class WheelbarrowRemoverInjector
+    {
+        [HarmonyPatch(typeof(Customer), "DeactivateCustomer")]
+        private static void Postfix(Customer __instance)
+        {
+            RemoveWheelbarrowFromNpc(__instance);
         }
     }
 }
