@@ -1,4 +1,4 @@
 ## Wheelbarrow of Cash
-Gives customers that have at least 1.5x the max normal balance a wheelbarrow filled with money (about 2.5% of customers)
+Gives customers that have at least $20k (configurable) a wheelbarrow filled with money
 
 <sub><sup>The jank was deliberately left in for humour</sup></sub>
